@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Assessment Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kantumruy Pro', sans-serif; }
+        
+        /* Custom Checkbox & Radio Styles */
+        .check-indicator {
+            transition: all 0.2s ease-in-out;
+        }
+        input[type="checkbox"]:checked + .check-indicator {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        input[type="radio"]:checked + .check-indicator {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            box-shadow: inset 0 0 0 3px white;
+        }
+
+        /* Feedback Animations */
+        .option-correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            animation: pulse-green 0.4s ease-out;
+            color: #166534;
+            font-weight: bold;
+        }
+        .option-incorrect {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            animation: shake 0.4s ease-in-out;
+            color: #991b1b;
+            text-decoration: line-through;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        
+        .disabled-labels { pointer-events: none; opacity: 0.9; }
+        .result-box { display: none; }
+        .chapter-header {
+            background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 py-10 px-4">
+    <div class="max-w-5xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-200">
+        <!-- Header -->
+        <div class="bg-blue-800 p-8 text-white text-center">
+            <h1 class="text-3xl md:text-4xl font-bold mb-3">Medical Semiology 3 (Ping visal only)</h1>
+            <p class="text-lg text-blue-100">Comprehensive Multiple Choice Questions</p>
+        </div>
+
+        <div class="p-6 md:p-10">
+            <div id="quiz-container" class="space-y-12">
+                <!-- Quiz Content Will Be Generated Here -->
+            </div>
+
+            <!-- Grading Section -->
+            <div id="result" class="result-box mt-12 p-8 bg-green-50 rounded-2xl border-4 border-green-200 text-center shadow-inner">
+                <h3 class="text-3xl font-bold text-green-800 mb-2">ពិន្ទុសរុបរបស់អ្នក (Final Score)</h3>
+                <div class="text-5xl font-extrabold text-green-600 mb-4"><span id="score">0</span> / <span id="total-qs">0</span></div>
+                <p class="text-green-700 text-lg">សូមពិនិត្យមើលចម្លើយដែលអ្នកបានធ្វើខុសនៅខាងលើ។</p>
+                <button onclick="location.reload()" class="mt-6 bg-white text-green-700 border-2 border-green-600 hover:bg-green-600 hover:text-white font-bold py-3 px-8 rounded-full transition">
+                    សាកល្បងម្ដងទៀត (Retry)
+                </button>
+            </div>
+
+            <div class="mt-12 flex justify-center" id="submit-btn-container">
+                <button onclick="gradeQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold py-4 px-14 rounded-full shadow-lg transition transform hover:-translate-y-1 active:scale-95">
+                    បញ្ជូនចម្លើយ និងពិនិត្យពិន្ទុ (Submit)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Full Question Bank
+        const mcqs = [
+            // Appendicitis
+            { c: "Appendicitis Quiz", q: "1. What is the currently accepted immune-related function of the appendix, particularly in younger individuals?", t: 1, a: [1], o: ["It produces digestive enzymes.", "It acts as a lymphoid organ with an immuno-protective function.", "It filters blood for the circulatory system.", "It has no known function and is purely a developmental remnant."] },
+            { c: "Appendicitis Quiz", q: "2. What is the most common cause (etiology) of appendicitis?", t: 1, a: [2], o: ["Bacterial infection from the skin.", "Viral gastroenteritis.", "Obstruction of the appendiceal lumen.", "High-fat dietary habits."] },
+            { c: "Appendicitis Quiz", q: "3. According to the sources, what is the lifetime incidence of acute appendicitis for men?", t: 1, a: [1], o: ["6.7%", "8.6%", "10.2%", "5.0%"] },
+            { c: "Appendicitis Quiz", q: "4. Which type of organisms typically predominate in the early course of appendicitis pathophysiology?", t: 1, a: [2], o: ["Anaerobic organisms.", "Fungi.", "Aerobic organisms.", "Parasites."] },
+            { c: "Appendicitis Quiz", q: "5. Microscopic findings in acute appendicitis classically include the proliferation of which cells in the muscularis propria?", t: 1, a: [1], o: ["Lymphocytes.", "Neutrophils.", "Eosinophils.", "Basophils."] },
+            { c: "Appendicitis Quiz", q: "6. The initial vague, centralized pain of appendicitis is caused by the stimulation of visceral afferent nerve fibers at which levels?", t: 1, a: [2], o: ["T1 through T4.", "T5 through T7.", "T8 through T10.", "L1 through L3."] },
+            { c: "Appendicitis Quiz", q: "7. Classically, where does appendicitis pain localize after the initial periumbilical discomfort?", t: 1, a: [1], o: ["Left upper quadrant.", "Right lower quadrant.", "Epigastric region.", "Left lower quadrant."] },
+            { c: "Appendicitis Quiz", q: "8. Approximately what percentage of patients with appendicitis present with a fever?", t: 1, a: [2], o: ["10%", "25%", "40%", "75%"] },
+            { c: "Appendicitis Quiz", q: "9. Which physical exam finding is defined as right lower quadrant pain elicited by palpation of the left lower quadrant?", t: 1, a: [2], o: ["Murphy's sign.", "Psoas sign.", "Rovsing's sign.", "Obturator sign."] },
+            { c: "Appendicitis Quiz", q: "10. A positive psoas sign, which involves pain on extension of the right hip, suggests which specific anatomical position of the appendix?", t: 1, a: [1], o: ["Pelvic appendicitis.", "Retro-cecal appendicitis.", "Pre-ileal appendicitis.", "Sub-hepatic appendicitis."] },
+            { c: "Appendicitis Quiz", q: "11. At 36 hours after the onset of symptoms, what is the estimated risk of appendiceal rupture?", t: 1, a: [0], o: ["2%", "5%", "10%", "25%"] },
+            { c: "Appendicitis Quiz", q: "12. Up to what fraction of patients with acute appendicitis will present with a normal white blood cell (WBC) count?", t: 1, a: [3], o: ["1/10", "1/5", "1/4", "1/3"] },
+            { c: "Appendicitis Quiz", q: "13. In a CT scan, what is the specific diameter threshold used as a criterion for an enlarged appendix?", t: 1, a: [2], o: ["Greater than 2 mm.", "Greater than 4 mm.", "Greater than 6 mm.", "Greater than 10 mm."] },
+            { c: "Appendicitis Quiz", q: "14. What is the reported accuracy rate of a CT scan for the diagnosis of appendicitis?", t: 1, a: [2], o: ["80%", "90%", "Greater than 95%", "100%"] },
+            { c: "Appendicitis Quiz", q: "15. Which imaging modality is recommended for a pregnant patient when an ultrasound is indeterminate?", t: 1, a: [1], o: ["Repeat CT scan.", "MRI.", "X-ray.", "Nuclear medicine scan."] },
+            { c: "Appendicitis Quiz", q: "16. What is considered the gold-standard treatment for acute appendicitis?", t: 1, a: [1], o: ["Broad spectrum antibiotics alone.", "Appendectomy.", "Percutaneous drainage.", "Observation and fluids."] },
+            { c: "Appendicitis Quiz", q: "17. Which surgical approach is currently preferred for most uncomplicated appendectomies?", t: 1, a: [1], o: ["Open approach.", "Laparoscopic approach.", "Robot-assisted open approach.", "Natural orifice transluminal surgery."] },
+            { c: "Appendicitis Quiz", q: "18. What procedure may be used to stabilize a patient with a known abscess from a perforated appendix before performing a later appendectomy?", t: 1, a: [1], o: ["Emergency open surgery.", "Percutaneous drainage.", "High-dose oral steroids.", "Immediate laparoscopic resection."] },
+            { c: "Appendicitis Quiz", q: "19. How can 'recurrent' appendicitis occur after an initial appendectomy?", t: 1, a: [2], o: ["The appendix regrows.", "It is caused by a different organ.", "Too much of the appendiceal stump is left behind.", "It is always a misdiagnosis of Crohn's disease."] },
+            { c: "Appendicitis Quiz", q: "20. If left untreated, what complication involving a localized abscess and the skin may develop?", t: 1, a: [0], o: ["Enterocutaneous fistula.", "Psoriasis.", "Basal cell carcinoma.", "Subcutaneous emphysema."] },
+
+            // Hepatitis
+            { c: "Hepatitis Multiple Choice Quiz", q: "1. What is the medical definition of hepatitis?", t: 1, a: [1], o: ["Infection of the gallbladder.", "Inflammation of the liver tissue.", "Obstruction of the portal vein.", "Enlargement of the spleen."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "2. What is the approximate weight of the liver in an average human body?", t: 1, a: [2], o: ["0.8 kg", "1.0 kg", "1.4 kg", "2.0 kg"] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "3. Which blood vessel is responsible for carrying digested food from the small intestine to the liver?", t: 1, a: [2], o: ["Hepatic artery.", "Aorta.", "Portal vein.", "Inferior vena cava."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "4. According to the World Health Organization (WHO) data, which type of hepatitis does NOT have an available vaccine?", t: 1, a: [1], o: ["Hepatitis A.", "Hepatitis C.", "Hepatitis D.", "Hepatitis E."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "5. Hepatitis A and E are primarily spread through which of the following?", t: 1, a: [0], o: ["Contaminated water and lack of food hygiene.", "Blood-to-blood contact.", "Sexual transmission.", "Sharing of needles."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "6. What percentage of Hepatitis C patients can be healed within three to six months of treatment?", t: 1, a: [2], o: ["50%", "75%", "90%", "100%"] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "7. What percentage of individuals infected with Hepatitis C are reported to be asymptomatic (show no symptoms)?", t: 1, a: [2], o: ["20–30%", "40–50%", "70–80%", "90–95%"] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "8. What is the average incubation period for Hepatitis B?", t: 1, a: [2], o: ["14 days.", "30 days.", "90 days.", "180 days."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "9. Which of the following is classified as a 'Vertical' route of transmission?", t: 1, a: [1], o: ["Between a person and their close contact through cuts.", "Between a mother with a chronic infection and her baby.", "Through parenteral injections.", "Through sexual contact."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "10. In laboratory studies (LFTs), an Alanine Aminotransferase (ALT) level greater than what value is indicative of Acute Hepatitis?", t: 1, a: [2], o: ["> 100", "> 500", "> 1000", "> 5000"] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "11. Which laboratory test, if found to be prolonged, suggests an impaired synthetic function of the liver?", t: 1, a: [2], o: ["Alkaline phosphatase.", "Serum bilirubin.", "Prothrombin time (PT).", "Serum creatinine."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "12. Which diagnostic test is considered the first-line evaluation for a suspected Hepatitis C (HCV) infection?", t: 1, a: [0], o: ["Anti-HCV antibodies.", "HCV RNA testing.", "Liver biopsy.", "Serum ammonia levels."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "13. According to the Interpretation of Tests for Acute Hepatitis B, what does a positive result for Anti-HBs alone (with all other markers negative) indicate?", t: 1, a: [2], o: ["Acute HBV infection.", "Chronic HBV infection.", "Prior vaccination for HBV.", "Early acute infection."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "14. Which of the following body fluids is categorized as having a HIGH concentration of the Hepatitis B virus?", t: 1, a: [2], o: ["Saliva.", "Semen.", "Wound exudates.", "Sweat."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "15. In the differential diagnosis of acute icteric hepatitis, which of these is listed as an 'extrahepatic' cause of jaundice?", t: 1, a: [1], o: ["Hemolytic jaundice.", "Extrahepatic obstructive jaundice.", "Toxic hepatitis.", "Wilson disease."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "16. Which of the following physical examination findings is identified as a negative prognostic indicator in patients with chronic hepatitis?", t: 1, a: [0], o: ["Ascites.", "Lethargy.", "Weight loss.", "Icterus."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "17. What is the recommended treatment for a patient diagnosed with Hepatitis A?", t: 1, a: [2], o: ["Immediate liver transplant.", "High-dose antiviral medications.", "No specific treatment; rest, dietary food, and avoiding alcohol.", "A three-dose vaccination schedule."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "18. Which medication is listed as an approved nucleoside/nucleotide analogue for treating chronic Hepatitis B?", t: 1, a: [0], o: ["Lamivudine.", "Acetaminophen.", "Interferon alfa-2b.", "Hep B immune globulin."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "19. What is the mean (average) incubation period for Hepatitis A?", t: 1, a: [2], o: ["1 week.", "2 weeks.", "4 weeks.", "8 weeks."] },
+            { c: "Hepatitis Multiple Choice Quiz", q: "20. During a physical exam for hepatitis, what are the typical findings when palpating the liver?", t: 1, a: [1], o: ["Small, hard, and non-tender.", "Tender and diffusely enlarged with a firm, sharp, smooth edge.", "Not palpable due to atrophy.", "Rough and nodular."] },
+
+            // Abdominal Trauma
+            { c: "Abdominal Trauma Quiz", q: "1. What is the definition of abdominal trauma according to the sources?", t: 1, a: [2], o: ["Injury only to the abdominal wall.", "Injury only to the internal organs.", "Injury to the organs in the intra-abdominal cavity and/or the abdominal wall.", "Only injuries caused by penetrating objects."] },
+            { c: "Abdominal Trauma Quiz", q: "2. What percentage of gunshot wounds that penetrate the peritoneum result in significant damage to major intra-abdominal structures?", t: 1, a: [2], o: ["50%", "75%", "90%", "100%"] },
+            { c: "Abdominal Trauma Quiz", q: "3. What are the two main causes of death resulting from abdominal trauma?", t: 1, a: [1], o: ["Heart failure and dehydration.", "Hemorrhage and systemic infection.", "Nerve damage and muscle atrophy.", "Bone fractures and respiratory failure."] },
+            { c: "Abdominal Trauma Quiz", q: "4. Which solid organ is considered the most vulnerable to all forms of injury because of its size and location?", t: 1, a: [2], o: ["Spleen.", "Pancreas.", "Liver.", "Kidney."] },
+            { c: "Abdominal Trauma Quiz", q: "5. In which abdominal quadrant is the liver primarily located?", t: 1, a: [1], o: ["Left upper quadrant.", "Upper right quadrant.", "Right lower quadrant.", "Left lower quadrant."] },
+            { c: "Abdominal Trauma Quiz", q: "6. Which organ is the most common cause of massive bleeding in blunt abdominal trauma?", t: 1, a: [1], o: ["Liver.", "Spleen.", "Aorta.", "Stomach."] },
+            { c: "Abdominal Trauma Quiz", q: "7. Lacerations of the spleen are associated with fractures of which ribs in 20% of cases?", t: 1, a: [1], o: ["Right upper ribs.", "Left lower ribs.", "Sternum.", "Floating ribs only."] },
+            { c: "Abdominal Trauma Quiz", q: "8. What is a common mechanism for isolated pancreatic injury in children?", t: 1, a: [1], o: ["Motor vehicle collisions.", "Bicycle accidents (impact with handlebars).", "Falls from height.", "Sports-related collisions."] },
+            { c: "Abdominal Trauma Quiz", q: "9. Which clinical finding is commonly associated with kidney injury in children with blunt abdominal trauma?", t: 1, a: [0], o: ["Bloody urine.", "Jaundice.", "Absent bowel sounds.", "High blood pressure."] },
+            { c: "Abdominal Trauma Quiz", q: "10. What is considered a diagnostic sign of bowel perforation on a CT scan?", t: 1, a: [1], o: ["Fluid around the liver.", "Gas within the abdominal cavity.", "Enlargement of the pancreas.", "Presence of a hematoma."] },
+            { c: "Abdominal Trauma Quiz", q: "11. What is the 'seat belt sign' associated with in motor vehicle collision victims?", t: 1, a: [1], o: ["A guaranteed broken pelvis.", "A high rate of injury to the abdominal organs.", "Simple surface bruising only.", "Injury to the head and neck."] },
+            { c: "Abdominal Trauma Quiz", q: "12. Which of the following is defined as the tensing of abdominal wall muscles to protect inflamed internal organs?", t: 1, a: [2], o: ["Evisceration.", "Pneumoperitoneum.", "Abdominal guarding.", "Rigidity."] },
+            { c: "Abdominal Trauma Quiz", q: "13. What percentage of people with polytrauma show evidence of abdominal injury on radiological imaging despite having no initial clinical signs?", t: 1, a: [1], o: ["5%", "10%", "20%", "30%"] },
+            { c: "Abdominal Trauma Quiz", q: "14. When is ultrasound recommended over a CT scan for diagnosing abdominal trauma?", t: 1, a: [2], o: ["When looking for the path of a bullet.", "When a patient is stable and has a head injury.", "For people who are not stable enough to be moved to CT scanning.", "It is never recommended over CT."] },
+            { c: "Abdominal Trauma Quiz", q: "15. What is the primary diagnostic use of X-rays in penetrating abdominal trauma?", t: 1, a: [1], o: ["To detect internal bleeding.", "To determine the path of an object and locate foreign matter.", "To view soft tissue lacerations.", "To diagnose bowel obstruction."] },
+            { c: "Abdominal Trauma Quiz", q: "16. Why has diagnostic peritoneal lavage (DPL) largely been replaced by ultrasound in Europe and North America?", t: 1, a: [2], o: ["It is less accurate at testing for bleeding.", "It is too expensive.", "It carries a risk of injuring organs and may lead to unnecessary surgery.", "It takes too long to perform."] },
+            { c: "Abdominal Trauma Quiz", q: "17. Which type of abdominal trauma is reported to predominate in rural areas?", t: 1, a: [0], o: ["Blunt injuries.", "Penetrating gunshots.", "Stab wounds.", "Eviscerations."] },
+            { c: "Abdominal Trauma Quiz", q: "18. What is the main goal of surgery when an abdominal injury causes a large, deadly bleed?", t: 1, a: [1], o: ["To clean the abdominal cavity.", "To stop any sources of bleeding.", "To immediately repair all minor organ lacerations.", "To take biopsy samples."] },
+            { c: "Abdominal Trauma Quiz", q: "19. Why is a 'long midline incision' often favored during emergency abdominal surgery?", t: 1, a: [2], o: ["It leaves a smaller scar.", "It prevents infection better.", "It allows for fast access and control of bleeding.", "It is the only way to view the retroperitoneal space."] },
+            { c: "Abdominal Trauma Quiz", q: "20. Delayed treatment of abdominal trauma is associated with high mortality particularly when it involves:", t: 1, a: [1], o: ["Rib fractures.", "Perforation of the gastrointestinal tract.", "Bruising from a seat belt.", "Laceration of the skin."] },
+
+            // Acute Abdominal Pain
+            { c: "Acute Abdominal Pain Quiz", q: "1. According to the sources, acute and severe abdominal pain is almost always a symptom of what?", t: 1, a: [1], o: ["Stress and anxiety", "Intra-abdominal disease", "Muscle strain", "Dietary indiscretion"] },
+            { c: "Acute Abdominal Pain Quiz", q: "2. Which type of pain is described as typically vague, dull, and nauseating?", t: 1, a: [2], o: ["Somatic pain", "Referred pain", "Visceral pain", "Phantom pain"] },
+            { c: "Acute Abdominal Pain Quiz", q: "3. Pain originating from 'midgut' structures (small bowel, proximal colon, and appendix) is typically felt in which area?", t: 1, a: [1], o: ["Upper abdomen", "Periumbilical area", "Lower abdomen", "Groin"] },
+            { c: "Acute Abdominal Pain Quiz", q: "4. What type of pain comes from the parietal peritoneum and is characterized as sharp and well-localized?", t: 1, a: [1], o: ["Visceral pain", "Somatic pain", "Referred pain", "Chronic pain"] },
+            { c: "Acute Abdominal Pain Quiz", q: "5. Which of the following is a classic example of 'referred pain' mentioned in the sources?", t: 1, a: [1], o: ["Periumbilical pain from the appendix", "Scapular pain due to biliary colic", "Sharp pain at a surgical scar", "Dull ache in the lower back"] },
+            { c: "Acute Abdominal Pain Quiz", q: "6. What is considered the most serious cause of peritonitis?", t: 1, a: [0], o: ["Perforation of the GI tract", "Strenuous exercise", "High-fiber diet", "Excessive alcohol consumption"] },
+            { c: "Acute Abdominal Pain Quiz", q: "7. Why should barium never be given to a patient with a suspected GI tract perforation?", t: 1, a: [2], o: ["It causes severe dehydration.", "It interferes with CT scans.", "It causes severe caking and peritonitis.", "It masks the symptoms of infection."] },
+            { c: "Acute Abdominal Pain Quiz", q: "8. Which of these is listed as an 'immediately life-threatening' cause of abdominal pain?", t: 1, a: [2], o: ["Heartburn", "Cholecystitis", "Ruptured abdominal aortic aneurysm", "Constipation"] },
+            { c: "Acute Abdominal Pain Quiz", q: "9. According to the 'Key Points', what should be ruled out first when evaluating a patient?", t: 1, a: [1], o: ["Nutritional deficiencies", "Life-threatening causes", "Minor infections", "Psychological factors"] },
+            { c: "Acute Abdominal Pain Quiz", q: "10. In the physical examination, what is 'guarding' defined as?", t: 1, a: [1], o: ["A patient’s refusal to be touched", "Involuntary contraction of the abdominal muscles", "Voluntary tensing of the chest muscles", "Swelling of the inguinal area"] },
+            { c: "Acute Abdominal Pain Quiz", q: "11. Where should a clinician palpate to specifically look for hernias?", t: 1, a: [1], o: ["The epigastric region", "The inguinal area and all surgical scars", "The costovertebral angles", "The periumbilical area"] },
+            { c: "Acute Abdominal Pain Quiz", q: "12. A 'silent abdomen' in a patient lying as still as possible with severe pain strongly suggests:", t: 1, a: [2], o: ["Bowel obstruction", "Renal colic", "Peritonitis", "Healthy digestion"] },
+            { c: "Acute Abdominal Pain Quiz", q: "13. Tenderness located specifically in the Right Upper Quadrant (RUQ) suggests:", t: 1, a: [1], o: ["Appendicitis", "Cholecystitis", "Diverticulitis", "Splenic rupture"] },
+            { c: "Acute Abdominal Pain Quiz", q: "14. What do the Grey Turner sign (ecchymoses of the costovertebral angles) and Cullen sign suggest?", t: 1, a: [1], o: ["Ruptured ectopic pregnancy", "Hemorrhagic pancreatitis", "Bowel obstruction", "Renal stones"] },
+            { c: "Acute Abdominal Pain Quiz", q: "15. A patient who is writhing around, unable to get comfortable, is more likely to have:", t: 1, a: [1], o: ["Peritonitis", "An obstructive mechanism (e.g., renal or biliary colic)", "A perforated ulcer", "Appendicitis"] },
+            { c: "Acute Abdominal Pain Quiz", q: "16. Which test is mandatory for all women of childbearing age presenting with abdominal pain?", t: 1, a: [1], o: ["Liver function test", "Urine pregnancy test", "Chest X-ray", "CBC"] },
+            { c: "Acute Abdominal Pain Quiz", q: "17. Which specific laboratory test is mentioned as being of 'high value' because it strongly suggests acute pancreatitis?", t: 1, a: [1], o: ["Hemoglobin", "Serum lipase", "White blood cell count", "Serum creatinine"] },
+            { c: "Acute Abdominal Pain Quiz", q: "18. What is the diagnostic modality of choice for suspected renal stones?", t: 1, a: [1], o: ["Ultrasound", "Noncontrast helical CT", "Plain abdominal X-ray", "MRI"] },
+            { c: "Acute Abdominal Pain Quiz", q: "19. How accurate is a CT with oral and IV contrast in diagnosing significant abdominal pain?", t: 1, a: [2], o: ["75%", "85%", "About 95%", "100%"] },
+            { c: "Acute Abdominal Pain Quiz", q: "20. Does providing moderate doses of IV analgesics (like morphine) interfere with the diagnosis of peritonitis?", t: 1, a: [1], o: ["Yes, it masks all physical signs.", "No, they do not mask peritoneal signs and may make examination easier.", "Yes, they cause the patient to become unconscious.", "No, but they are only recommended for minor pain."] },
+
+            // Fatty Liver Disease
+            { c: "Fatty Liver Disease Quiz", q: "1. What is the medical term for fatty liver disease?", t: 1, a: [1], o: ["Hepatic cirrhosis", "Hepatic steatosis", "Hepatocellular carcinoma", "Biliary colic"] },
+            { c: "Fatty Liver Disease Quiz", q: "2. Where is pain occasionally felt in patients who show symptoms of fatty liver?", t: 1, a: [1], o: ["Lower left abdomen", "Upper right side of the abdomen", "Mid-back", "Left shoulder"] },
+            { c: "Fatty Liver Disease Quiz", q: "3. What are the two main types of fatty liver disease?", t: 1, a: [2], o: ["Diabetic and Hypertensive", "Acute and Chronic", "Non-alcoholic and Alcoholic", "Primary and Secondary"] },
+            { c: "Fatty Liver Disease Quiz", q: "4. What distinguishes Nonalcoholic Steatohepatitis (NASH) from simple fatty liver?", t: 1, a: [1], o: ["The presence of excess fat only", "The presence of inflammation and liver cell damage", "It is caused by alcohol consumption", "It always results in immediate liver failure"] },
+            { c: "Fatty Liver Disease Quiz", q: "5. What percentage of people with Nonalcoholic Fatty Liver Disease (NAFLD) are estimated to have NASH?", t: 1, a: [2], o: ["5%", "10%", "20%", "50%"] },
+            { c: "Fatty Liver Disease Quiz", q: "6. In which stage of NAFLD is the damage permanent, leading to a shrunken and lumpy liver?", t: 1, a: [3], o: ["Simple fatty liver", "NASH", "Fibrosis", "Cirrhosis"] },
+            { c: "Fatty Liver Disease Quiz", q: "7. What is a characteristic of the 'fibrosis' stage of NAFLD?", t: 1, a: [1], o: ["The liver stops working immediately.", "Persistent inflammation causes scar tissue, but the liver still functions normally.", "It is the first stage of the disease.", "It is only caused by viral hepatitis."] },
+            { c: "Fatty Liver Disease Quiz", q: "8. On average, how many years does it take for NAFLD without NASH or fibrosis to progress to cirrhosis?", t: 1, a: [2], o: ["10 years", "25 years", "57 years", "80 years"] },
+            { c: "Fatty Liver Disease Quiz", q: "9. Pathologically, fatty change represents the intra-cytoplasmatic accumulation of which substance?", t: 1, a: [1], o: ["Glucose", "Triglycerides", "Bilirubin", "Calcium"] },
+            { c: "Fatty Liver Disease Quiz", q: "10. Which form of steatosis is most common and associated with obesity, diabetes, and long-term corticosteroid use?", t: 1, a: [1], o: ["Microvesicular steatosis", "Macrovesicular steatosis", "Fibrotic steatosis", "Crystalline steatosis"] },
+            { c: "Fatty Liver Disease Quiz", q: "11. What is the 'signet ring' appearance in liver pathology?", t: 1, a: [1], o: ["Small fat vacuoles surrounding a central nucleus.", "Large vacuoles pushing the nucleus to the periphery of the cell.", "A ring of inflammation around a healthy cell.", "Scar tissue forming a circular pattern."] },
+            { c: "Fatty Liver Disease Quiz", q: "12. Which of the following is considered an irreversible lesion in fatty liver pathology?", t: 1, a: [2], o: ["Liposomes", "Small vacuoles", "Fatty cysts", "Triglyceride accumulation"] },
+            { c: "Fatty Liver Disease Quiz", q: "13. How is NAFLD most commonly discovered in the general population?", t: 1, a: [1], o: ["Routine mass screening programs.", "Incidental discovery of elevated liver enzymes or during imaging.", "Severe jaundice as the first symptom.", "Sudden weight gain."] },
+            { c: "Fatty Liver Disease Quiz", q: "14. Which diagnostic test is considered the 'gold standard' for fatty liver?", t: 1, a: [2], o: ["Ultrasonography", "Liver enzyme panels", "Histology/Liver biopsy", "MRI"] },
+            { c: "Fatty Liver Disease Quiz", q: "15. Alcohol causes fatty liver due to the production of which toxic metabolite during metabolism?", t: 1, a: [1], o: ["Acetone", "Aldehydes", "Methanol", "Uric acid"] },
+            { c: "Fatty Liver Disease Quiz", q: "16. According to the sources, the consumption of how many eggs per week can increase the risk of NAFLD?", t: 1, a: [1], o: ["0 to 1", "2 to 3", "5 to 7", "More than 10"] },
+            { c: "Fatty Liver Disease Quiz", q: "17. Which of the following foods is specifically recommended to be AVOIDED if you have a fatty liver?", t: 1, a: [1], o: ["Green leafy vegetables", "White bread, rice, and pasta", "Lean poultry", "Berries"] },
+            { c: "Fatty Liver Disease Quiz", q: "18. How does the medication Pioglitazone (Actos) help treat fatty liver/NASH?", t: 1, a: [1], o: ["It destroys fat cells directly.", "It increases insulin sensitivity.", "It acts as a heavy metal chelator.", "It is a potent antibiotic."] },
+            { c: "Fatty Liver Disease Quiz", q: "19. What is the reported percentage of people with NASH without cirrhosis that can develop hepatocellular carcinoma?", t: 1, a: [2], o: ["10%", "25%", "Up to 45%", "80%"] },
+            { c: "Fatty Liver Disease Quiz", q: "20. What is the mainstay of treatment for NAFLD?", t: 1, a: [2], o: ["Immediate surgical resection.", "High-dose chemotherapy.", "Lifestyle changes (increased physical activity and weight loss).", "Daily blood transfusions."] },
+
+            // Food Poisoning
+            { c: "Food Poisoning Quiz", q: "1. What is the general medical definition of food poisoning according to the source?", t: 1, a: [1], o: ["An allergic reaction to specific food proteins.", "The result of eating contaminated, spoiled, or toxic food.", "A digestive disorder caused by eating too quickly.", "A permanent intolerance to dairy and gluten."] },
+            { c: "Food Poisoning Quiz", q: "2. Symptoms of food poisoning can appear as early as 1 hour after infection, but how long is the maximum reported incubation period?", t: 1, a: [3], o: ["24 hours.", "7 days.", "14 days.", "28 days."] },
+            { c: "Food Poisoning Quiz", q: "3. Which of the following is considered a symptom of potentially 'life-threatening' food poisoning?", t: 1, a: [1], o: ["Mild headache.", "Diarrhea persisting for more than 3 days.", "A fever of 99°F.", "Increased axillary sweat."] },
+            { c: "Food Poisoning Quiz", q: "4. A fever higher than what temperature is listed as a warning sign of severe food poisoning?", t: 1, a: [1], o: ["100°F (37.8°C)", "102°F (38.9°C)", "104°F (40.0°C)", "105°F (40.5°C)"] },
+            { c: "Food Poisoning Quiz", q: "5. Which type of pathogen is by far the most prevalent cause of food poisoning?", t: 1, a: [2], o: ["Viruses.", "Parasites.", "Bacteria.", "Fungi."] },
+            { c: "Food Poisoning Quiz", q: "6. Which specific bacterium is identified as the 'biggest culprit' of serious food poisoning cases in the United States?", t: 1, a: [2], o: ["E. coli.", "Listeria.", "Salmonella.", "Campylobacter."] },
+            { c: "Food Poisoning Quiz", q: "7. Toxoplasma is a parasite commonly associated with food poisoning that is typically found in:", t: 1, a: [1], o: ["Raw shellfish.", "Cat litter boxes.", "Unwashed spinach.", "Undercooked poultry."] },
+            { c: "Food Poisoning Quiz", q: "8. Which virus causes over 20 million cases of food poisoning each year?", t: 1, a: [2], o: ["Rotavirus.", "Sapovirus.", "Norovirus (Norwalk virus).", "Astrovirus."] },
+            { c: "Food Poisoning Quiz", q: "9. Which serious viral condition is specifically mentioned as being transmissible through food?", t: 1, a: [1], o: ["Influenza.", "Hepatitis A.", "Epstein-Barr virus.", "Rhinovirus."] },
+            { c: "Food Poisoning Quiz", q: "10. In the mechanism of food poisoning involving performed toxins, where do these toxins primarily act?", t: 1, a: [0], o: ["The intestine and CNS.", "The lungs and heart.", "The skin and skeletal muscles.", "The kidneys and bladder."] },
+            { c: "Food Poisoning Quiz", q: "11. Infant Botulism is specifically associated with the ingestion of which of the following foods?", t: 1, a: [1], o: ["Raw eggs.", "Honey and corn syrups.", "Unpasteurized milk.", "Undercooked beef."] },
+            { c: "Food Poisoning Quiz", q: "12. What is the recommended treatment for Infant Botulism?", t: 1, a: [1], o: ["Broad-spectrum antibiotics.", "Botulism immune globulin (BIG).", "High-dose Vitamin C.", "Immediate gastric lavage."] },
+            { c: "Food Poisoning Quiz", q: "13. What is the most common reason that food becomes contaminated with fecal matter?", t: 1, a: [1], o: ["Improper refrigeration.", "A person preparing food doesn’t wash their hands.", "Cross-contamination with raw vegetables.", "Using expired spices."] },
+            { c: "Food Poisoning Quiz", q: "14. When examining a patient suspected of having food poisoning, what should be the primary focus?", t: 1, a: [1], o: ["Measuring height and weight.", "Assessing the severity of dehydration.", "Checking for bone fractures.", "Testing neurological reflexes."] },
+            { c: "Food Poisoning Quiz", q: "15. Which clinical finding is associated specifically with a Salmonella Typhi infection?", t: 1, a: [2], o: ["Cellulitis.", "Erythema nodosum.", "Upper abdominal rose spot macules.", "Exudative pharyngitis."] },
+            { c: "Food Poisoning Quiz", q: "16. What is a sign of 'mild' dehydration mentioned in the general findings?", t: 1, a: [1], o: ["Tachycardia.", "Decreased axillary sweat.", "Hypotension.", "Orthostasis."] },
+            { c: "Food Poisoning Quiz", q: "17. Why is a C-difficile assay performed during laboratory testing?", t: 1, a: [1], o: ["To detect parasites like Toxoplasma.", "To rule out antibiotic-associated diarrhea.", "To measure the degree of volume depletion.", "To check for fecal occult blood."] },
+            { c: "Food Poisoning Quiz", q: "18. Most cases of food poisoning can be treated at home and typically resolve within how many days?", t: 1, a: [1], o: ["1 to 2 days.", "3 to 5 days.", "7 to 10 days.", "2 weeks."] },
+            { c: "Food Poisoning Quiz", q: "19. Which substance should be AVOIDED during food poisoning because it may irritate the digestive tract?", t: 1, a: [1], o: ["Coconut water.", "Caffeine.", "Electrolyte sports drinks.", "Fruit juice."] },
+            { c: "Food Poisoning Quiz", q: "20. Which of the following foods is listed as 'bad to eat' (hard to digest) when recovering from food poisoning?", t: 1, a: [0], o: ["Fried and fatty foods.", "Plain crackers.", "Bananas.", "Boiled potatoes."] },
+
+            // Gallbladder Semiology
+            { c: "Gallbladder Semiology Quiz", q: "1. What is the primary function of the gallbladder?", t: 1, a: [1], o: ["Producing bile for the liver.", "Storing and releasing bile to help break down fatty foods.", "Filtering toxins from the small intestine.", "Absorbing cholesterol from the blood."] },
+            { c: "Gallbladder Semiology Quiz", q: "2. What is the medical definition of 'Cholecystitis'?", t: 1, a: [1], o: ["The formation of gallstones.", "Inflammation of the gallbladder.", "Narrowing of the bile ducts.", "A tumor in the biliary tree."] },
+            { c: "Gallbladder Semiology Quiz", q: "3. What precipitates 'Acute Calculous Cholecystitis' in 90% of cases?", t: 1, a: [1], o: ["Excessive alcohol use.", "Obstruction of the neck or cystic duct by gallstones.", "Viral infection of the liver.", "Rapid weight loss."] },
+            { c: "Gallbladder Semiology Quiz", q: "4. What is the most common location for gallstone impaction?", t: 1, a: [2], o: ["The common bile duct.", "The hepatic duct.", "Hartmann’s pouch.", "The duodenum."] },
+            { c: "Gallbladder Semiology Quiz", q: "5. Approximately what percentage of people with gallstones will experience no symptoms?", t: 1, a: [3], o: ["10%", "50%", "75%", "90%"] },
+            { c: "Gallbladder Semiology Quiz", q: "6. Gallstones are formed from substances found in bile, primarily including:", t: 1, a: [1], o: ["Calcium and sodium.", "Cholesterol and bilirubin.", "Protein and glucose.", "Iron and magnesium."] },
+            { c: "Gallbladder Semiology Quiz", q: "7. How long do typical episodes of 'Biliary Colic' usually last?", t: 1, a: [1], o: ["5 to 10 minutes.", "1 to 5 hours.", "12 to 24 hours.", "More than 48 hours."] },
+            { c: "Gallbladder Semiology Quiz", q: "8. Biliary colic episodes are especially common after which of the following?", t: 1, a: [2], o: ["Strenuous exercise.", "Prolonged fasting.", "Large or fatty meals.", "Drinking excessive water."] },
+            { c: "Gallbladder Semiology Quiz", q: "9. Which of the following complications is identified as a 'surgical emergency'?", t: 1, a: [1], o: ["Chronic indigestion.", "Gallbladder rupture.", "Low-grade fever.", "Excess abdominal gas."] },
+            { c: "Gallbladder Semiology Quiz", q: "10. What characterizes 'Acalculous Biliary Pain'?", t: 1, a: [1], o: ["Pain caused by stones larger than 5 cm.", "Pain in the bile ducts without gallstones appearing on imaging tests.", "Pain that only occurs in the lower abdomen.", "Inflammation caused by AIDS-related infections."] },
+            { c: "Gallbladder Semiology Quiz", q: "11. Primary Sclerosing Cholangitis is most likely believed to be what type of disorder?", t: 1, a: [1], o: ["A bacterial infection.", "An autoimmune disorder.", "A hereditary blood disease.", "A nutritional deficiency."] },
+            { c: "Gallbladder Semiology Quiz", q: "12. Where is the pain associated with gallbladder problems most commonly located?", t: 1, a: [1], o: ["Lower left abdomen.", "Upper right or middle abdomen.", "Lower back near the tailbone.", "Left shoulder and neck."] },
+            { c: "Gallbladder Semiology Quiz", q: "13. Gallbladder pain may extend (radiate) to which other part of the body?", t: 1, a: [1], o: ["The left arm.", "Beneath the right shoulder blade or to the back.", "Down to the knees.", "The top of the head."] },
+            { c: "Gallbladder Semiology Quiz", q: "14. What effect does a deep breath typically have on gallbladder pain?", t: 1, a: [1], o: ["It relieves the pain.", "It increases the pain.", "It has no effect.", "It changes the pain from sharp to dull."] },
+            { c: "Gallbladder Semiology Quiz", q: "15. How is the dark urine associated with gallbladder issues often described?", t: 1, a: [1], o: ["Bright red.", "Tea-colored.", "Milky white.", "Clear."] },
+            { c: "Gallbladder Semiology Quiz", q: "16. What is a common characteristic of stool in patients with gallbladder conditions?", t: 1, a: [2], o: ["Black and tarry.", "Bright green.", "Lighter color, like clay.", "Containing visible blood."] },
+            { c: "Gallbladder Semiology Quiz", q: "17. In an ultrasound for acute cholecystitis, what measurement constitutes 'wall thickening'?", t: 1, a: [2], o: ["1 mm or greater.", "2 mm or greater.", "3 mm or greater.", "5 mm or greater."] },
+            { c: "Gallbladder Semiology Quiz", q: "18. What is 'Murphy's Sign' during a physical examination?", t: 1, a: [1], o: ["Checking the patient's reflexes.", "Pressing on the gallbladder to see if pain is elicited.", "Listening for bowel sounds.", "Checking for jaundice in the eyes."] },
+            { c: "Gallbladder Semiology Quiz", q: "19. Which laboratory finding is typical for a person with gallstone-related inflammation or infection?", t: 1, a: [1], o: ["Decreased red blood cell count.", "Elevated white blood cell count.", "Low blood sugar levels.", "Decreased liver enzymes."] },
+            { c: "Gallbladder Semiology Quiz", q: "20. What is 'Gallstone Ileus'?", t: 1, a: [1], o: ["A type of gallbladder cancer.", "A small bowel obstruction caused by a large gallstone.", "An infection of the biliary tree.", "A congenital absence of the gallbladder."] },
+
+            // Gastrointestinal Perforation
+            { c: "Gastrointestinal Perforation Quiz", q: "1. What is the medical definition of a gastrointestinal perforation?", t: 1, a: [2], o: ["An inflammation of the stomach lining.", "A blockage in the small intestine.", "A hole in the wall of part of the gastrointestinal tract.", "A benign tumour in the large intestine."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "2. How does the onset of pain typically differ based on the location of the perforation?", t: 1, a: [1], o: ["Large intestine onset is sudden; stomach onset is gradual.", "Stomach/small intestine onset is typically sudden; large intestine onset may be more gradual.", "Both are always gradual.", "Both are always sudden."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "3. Which of the following describes the nature of the pain in most cases?", t: 1, a: [2], o: ["Intermittent and cramping.", "Vague and sharp.", "Usually constant.", "Only present during movement."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "4. Which clinical signs are associated with the development of sepsis in these patients?", t: 1, a: [0], o: ["Increased heart rate, increased breathing rate, fever, and confusion.", "Decreased heart rate and low body temperature.", "Improved mental clarity and slow breathing.", "High blood pressure and decreased heart rate."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "5. Which of the following is NOT listed as an underlying cause of perforation?", t: 1, a: [3], o: ["Gastric and duodenal ulcers.", "Typhoid fever and GI cancer.", "Use of non-steroidal anti-inflammatory drugs (NSAIDs).", "Excessive intake of vitamin C."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "6. How can 'eating multiple magnets' lead to a perforation?", t: 1, a: [1], o: ["They cause a chemical burn in the stomach.", "They attract and stick to one another through different loops of the intestine.", "They increase the acidity of the stomach.", "They block the bile duct."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "7. What are typical physical examination findings for the abdomen in a perforation case?", t: 1, a: [2], o: ["Soft, non-tender, and hyperactive bowel sounds.", "Flat, soft, and no guarding.", "Slightly distended, hypoactive bowel sounds, and involuntary muscle guarding.", "Concave and completely painless."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "8. Sudden pain in the epigastrium to the right of the midline specifically indicates the perforation of what?", t: 1, a: [1], o: ["A gastric ulcer.", "A duodenal ulcer.", "The appendix.", "The sigmoid colon."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "9. A gastric ulcer perforation often reveals itself through burning pain in the epigastrium accompanied by:", t: 1, a: [1], o: ["Jaundice and weight loss.", "Flatulence and dyspepsia.", "Lower back pain and cough.", "Skin rash and headache."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "10. Gastrointestinal perforation results in severe abdominal pain that is intensified by:", t: 1, a: [1], o: ["Lying perfectly still.", "Movement.", "Drinking water.", "Sleep."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "11. What physical sign describes the abdomen becoming hard and firm to the touch?", t: 1, a: [1], o: ["Distension.", "Rigidity.", "Peristalsis.", "Tympany."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "12. Once the abdomen becomes 'silent', what unusual clinical sign can sometimes be heard all over the abdomen?", t: 1, a: [1], o: ["Bowel sounds.", "Heart sounds.", "Lung sounds.", "Stomach gurgling."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "13. On an X-ray, what is a key indicator of a perforation?", t: 1, a: [2], o: ["Visible bone fractures.", "Large amounts of fluid in the lungs.", "Gas visible in the abdominal cavity.", "A visible heart murmur."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "14. In what position is gas most easily visualised in the abdominal cavity on an X-ray?", t: 1, a: [1], o: ["Prone (lying on stomach).", "Upright.", "Supine (lying on back).", "Left lateral decubitus only."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "15. Which laboratory result is commonly elevated in patients with a perforation?", t: 1, a: [1], o: ["Red blood cell count.", "White blood cell count.", "Platelet count.", "Blood sugar level."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "16. What is the primary medical therapy (pre-operative) for a patient with signs of dehydration or septicaemia?", t: 1, a: [1], o: ["Immediate oral feeding.", "Keep the patient NPO, establish IV access, and initiate crystalloid therapy.", "Physical therapy and bed rest.", "High-fibre diet and exercise."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "17. What loading dose of Gentamicin is recommended for adults before surgery?", t: 1, a: [1], o: ["1 mg/kg IV.", "2 mg/kg IV.", "5 mg/kg IV.", "10 mg/kg IV."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "18. Which surgical procedure is nearly always required to treat the condition?", t: 1, a: [2], o: ["Appendectomy.", "Cholecystectomy.", "Exploratory laparotomy and closure of perforation with peritoneal wash.", "Liver transplant."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "19. What is a 'Graham patch' used for?", t: 1, a: [2], o: ["Repairing the heart.", "Covering a skin wound.", "Duodenal perforations.", "Appendix removal."] },
+            { c: "Gastrointestinal Perforation Quiz", q: "20. The removal of a portion of the small or large intestine may result in which outcome?", t: 1, a: [0], o: ["A colostomy or ileostomy.", "Immediate weight gain.", "Enhanced digestion.", "Permanent loss of heart sounds."] },
+
+            // Hemorrhoids
+            { c: "Hemorrhoids Quiz", q: "1. In their normal state, what is the primary function of hemorrhoid cushions?", t: 1, a: [1], o: ["To sense temperature in the anal canal", "To assist with stool control", "To increase the speed of defecation", "To provide lubrication for the rectum"] },
+            { c: "Hemorrhoids Quiz", q: "2. Which type of hemorrhoid is characterized by painless, bright red rectal bleeding during defecation?", t: 1, a: [2], o: ["Thrombosed external hemorrhoids", "Chronic anal fissures", "Internal hemorrhoids", "Rectal tumors"] },
+            { c: "Hemorrhoids Quiz", q: "3. In a normal anal canal, where are the three main cushions classically located?", t: 1, a: [0], o: ["Left lateral, right anterior, and right posterior", "Right lateral, left anterior, and left posterior", "Posterior midline and anterior midline", "Left lateral, left anterior, and right anterior"] },
+            { c: "Hemorrhoids Quiz", q: "4. The hemorrhoidal plexus is composed of a set of blood vessels (sinusoids), connective tissue, and:", t: 1, a: [1], o: ["Internal anal sphincter", "Smooth muscle", "Striated muscle", "Lymphatic nodes"] },
+            { c: "Hemorrhoids Quiz", q: "5. Hemorrhoid cushions contribute what percentage to anal closure pressure at rest?", t: 1, a: [1], o: ["5–10%", "15–20%", "30–40%", "50–60%"] },
+            { c: "Hemorrhoids Quiz", q: "6. External hemorrhoids originate from which specific vascular structure?", t: 1, a: [2], o: ["Superior hemorrhoidal plexus", "Middle rectal vein", "Inferior hemorrhoidal plexus", "Superior rectal artery"] },
+            { c: "Hemorrhoids Quiz", q: "7. If an external hemorrhoid is thrombosed, how long does the pain typically take to resolve?", t: 1, a: [1], o: ["12–24 hours", "2 to 3 days", "7 to 10 days", "4 weeks"] },
+            { c: "Hemorrhoids Quiz", q: "8. What is the clinical term for blood that covers the stool during a bowel movement?", t: 1, a: [2], o: ["Hematemesis", "Hemoptysis", "Hematochezia", "Hematuria"] },
+            { c: "Hemorrhoids Quiz", q: "9. Under what condition do internal hemorrhoids usually become painful?", t: 1, a: [1], o: ["During every normal bowel movement", "Only if they become thrombosed or necrotic", "When they are classified as Grade I", "Always, as they are highly sensitive to touch"] },
+            { c: "Hemorrhoids Quiz", q: "10. Which of the following activities is believed to potentially increase the risk of severe hemorrhoids?", t: 1, a: [0], o: ["Squatting while defecating", "Regular cardiovascular exercise", "Sleeping on one's back", "High-fiber dieting"] },
+            { c: "Hemorrhoids Quiz", q: "11. Why is surgical treatment for hemorrhoids rarely necessary for pregnant women?", t: 1, a: [1], o: ["Surgery is strictly contraindicated during pregnancy", "Symptoms usually resolve after delivery", "Hormones naturally shrink the vessels before birth", "The pressure from the fetus protects the cushions"] },
+            { c: "Hemorrhoids Quiz", q: "12. The differentiation between internal and external hemorrhoids is primarily based on their position relative to the:", t: 1, a: [2], o: ["Levator ani muscle", "Columns of Morgagni", "Pectinate (or dentate) line", "Superior valve of Houston"] },
+            { c: "Hemorrhoids Quiz", q: "13. Internal hemorrhoids lack pain receptors because they are covered by which type of tissue?", t: 1, a: [2], o: ["Squamous epithelium", "Anoderm", "Columnar epithelium", "Cutaneous nerves"] },
+            { c: "Hemorrhoids Quiz", q: "14. According to the 1985 classification, what defines a Grade II internal hemorrhoid?", t: 1, a: [1], o: ["No prolapse, only prominent blood vessels", "Prolapse upon bearing down, but spontaneous reduction", "Prolapse requiring manual reduction", "Permanent prolapse that cannot be reduced"] },
+            { c: "Hemorrhoids Quiz", q: "15. Which grade of internal hemorrhoid is defined by prolapse upon bearing down that requires manual reduction?", t: 1, a: [2], o: ["Grade I", "Grade II", "Grade III", "Grade IV"] },
+            { c: "Hemorrhoids Quiz", q: "16. What is the primary characteristic of a Grade IV internal hemorrhoid?", t: 1, a: [2], o: ["It only bleeds and never prolapses", "It reduces spontaneously after a bowel movement", "It is a permanent prolapse that cannot be manually reduced", "It is found only below the dentate line"] },
+            { c: "Hemorrhoids Quiz", q: "17. External hemorrhoids are sensitive to pain and temperature because they are covered by:", t: 1, a: [1], o: ["Columnar epithelium", "Anoderm and skin", "Mucous membranes", "Internal sphincter muscle"] },
+            { c: "Hemorrhoids Quiz", q: "18. Which diagnostic procedure is typically required for visual confirmation of internal hemorrhoids?", t: 1, a: [2], o: ["External visual inspection", "Digital rectal exam", "Anoscopy", "Abdominal ultrasound"] },
+            { c: "Hemorrhoids Quiz", q: "19. Which of the following conditions is an anorectal problem that can present with symptoms similar to hemorrhoids?", t: 1, a: [3], o: ["Anal fissures", "Colorectal cancer", "Rectal varices", "All of the above"] },
+            { c: "Hemorrhoids Quiz", q: "20. What is a potential complication of a closed hemorrhoidectomy surgery?", t: 1, a: [0], o: ["Urinary retention or urinary tract infection", "Immediate resolution of all post-operative pain", "Permanent fecal incontinence in 95% of cases", "Rapid growth of new internal cushions"] },
+
+            // Intestinal Obstruction
+            { c: "Intestinal Obstruction Quiz", q: "1. What is the medical definition of intestinal obstruction?", t: 1, a: [1], o: ["Permanent paralysis of the bowel wall.", "Significant mechanical impairment or complete arrest of the passage of contents through the intestine.", "Inflammation of the intestinal mucosa due to infection.", "A temporary slowing of digestion due to dietary changes."] },
+            { c: "Intestinal Obstruction Quiz", q: "2. What percentage of partial small-bowel obstructions typically resolve with nonoperative treatment?", t: 1, a: [3], o: ["15%", "50%", "75%", "85%"] },
+            { c: "Intestinal Obstruction Quiz", q: "3. Overall, what is the most common cause of mechanical intestinal obstruction?", t: 1, a: [0], o: ["Adhesions.", "Foreign bodies.", "Fecal impaction.", "Diverticulitis."] },
+            { c: "Intestinal Obstruction Quiz", q: "4. How is 'intussusception' defined in the sources?", t: 1, a: [1], o: ["Twisting of the bowel on its mesentery.", "Telescoping of one segment of bowel into another.", "A stricture caused by malignancy.", "A failure of peristalsis without physical blockage."] },
+            { c: "Intestinal Obstruction Quiz", q: "5. In strangulating obstruction, which of the following events typically occurs first?", t: 1, a: [2], o: ["Arterial occlusion.", "Gangrene.", "Venous obstruction.", "Perforation."] },
+            { c: "Intestinal Obstruction Quiz", q: "6. Strangulating obstruction can progress to infarction and gangrene in as little as:", t: 1, a: [1], o: ["1 hour.", "6 hours.", "24 hours.", "48 hours."] },
+            { c: "Intestinal Obstruction Quiz", q: "7. Which symptom is highly characteristic of small-bowel obstruction but much less common in large-bowel obstruction?", t: 1, a: [1], o: ["Constipation.", "Early and profuse vomiting.", "Abdominal distention.", "Obstipation."] },
+            { c: "Intestinal Obstruction Quiz", q: "8. The presence of severe, steady pain in a patient with an obstruction strongly suggests:", t: 1, a: [2], o: ["Simple mechanical blockage.", "A partial obstruction.", "Strangulation has occurred.", "A high small-bowel obstruction."] },
+            { c: "Intestinal Obstruction Quiz", q: "9. Which finding on auscultation indicates late simple obstruction, strangulation, or infarction?", t: 1, a: [0], o: ["A silent abdomen or minimal peristalsis.", "Loud, frequent borborygmi.", "High-pitched 'tinkling' sounds.", "Normal bowel sounds."] },
+            { c: "Intestinal Obstruction Quiz", q: "10. A 'bird-beak' deformity visible on a contrast enema is a classic sign of:", t: 1, a: [1], o: ["Intussusception.", "Volvulus (cecal or sigmoid).", "Small bowel tumor.", "Crohn's disease."] },
+            { c: "Intestinal Obstruction Quiz", q: "11. What does the presence of gas in the bowel wall (pneumatosis intestinalis) on an X-ray indicate?", t: 1, a: [1], o: ["Simple distention.", "Gangrene.", "Fecal impaction.", "High-protein diet."] },
+            { c: "Intestinal Obstruction Quiz", q: "12. According to the sources, what is the most common site for an intestinal obstruction to occur?", t: 1, a: [1], o: ["Duodenum.", "Small intestine.", "Sigmoid colon.", "Rectum."] },
+            { c: "Intestinal Obstruction Quiz", q: "13. Which X-ray view is specifically mentioned as necessary to see 'fluid levels' in the bowel?", t: 1, a: [1], o: ["Supine view.", "Upright view.", "Prone view.", "Left lateral decubitus only."] },
+            { c: "Intestinal Obstruction Quiz", q: "14. Approximately what percentage of patients with small-bowel obstruction experience strangulation?", t: 1, a: [2], o: ["5%", "10%", "25%", "50%"] },
+            { c: "Intestinal Obstruction Quiz", q: "15. What is the primary site of abdominal cramps for a patient with small-bowel obstruction?", t: 1, a: [0], o: ["Centered around the umbilicus or epigastrium.", "Lower left quadrant.", "Right iliac fossa.", "Lower back."] },
+            { c: "Intestinal Obstruction Quiz", q: "16. Which IV fluids are recommended for intravascular volume repletion in supportive care?", t: 1, a: [1], o: ["D5W (5% Dextrose in water).", "0.9% saline or lactated Ringer’s solution.", "Sterile water.", "High-glucose solutions."] },
+            { c: "Intestinal Obstruction Quiz", q: "17. If bowel ischemia or infarction is suspected, which type of antibiotic is recommended before surgery?", t: 1, a: [1], o: ["First-generation penicillin.", "3rd-generation cephalosporin (e.g., cefotetan).", "Oral tetracycline.", "Antiviral medication."] },
+            { c: "Intestinal Obstruction Quiz", q: "18. According to the statistical table in the sources, what percentage of intestinal obstructions are caused by adhesive disease?", t: 1, a: [2], o: ["10%", "20%", "60%", "90%"] },
+            { c: "Intestinal Obstruction Quiz", q: "19. If a gallstone is the cause of an obstruction, how is it typically removed?", t: 1, a: [1], o: ["Total cholecystectomy.", "Through an enterotomy.", "Using high-dose oral laxatives.", "Laser lithotripsy."] },
+            { c: "Intestinal Obstruction Quiz", q: "20. A physical examination of a large-bowel obstruction typically reveals:", t: 1, a: [1], o: ["A flat, soft abdomen.", "A distended abdomen with loud borborygmi and an empty rectum.", "Profuse vomiting within one hour of onset.", "Severe tenderness in every case."] },
+
+            // Pancreatitis Semiology
+            { c: "Pancreatitis Semiology Quiz", q: "1. Where is the pancreas located in the body?", t: 1, a: [1], o: ["In the lower pelvic region.", "Tucked behind the stomach in the upper abdomen.", "Attached to the left kidney.", "Behind the liver in the right upper quadrant."] },
+            { c: "Pancreatitis Semiology Quiz", q: "2. Which of the following enzymes is produced by the pancreas to aid in digestion?", t: 1, a: [1], o: ["Pepsin.", "Lipase.", "Renin.", "Gastrin."] },
+            { c: "Pancreatitis Semiology Quiz", q: "3. What is the defining characteristic of chronic pancreatitis compared to acute pancreatitis?", t: 1, a: [2], o: ["It goes away without treatment.", "It only occurs in children.", "It occurs over many years.", "It is always caused by a virus."] },
+            { c: "Pancreatitis Semiology Quiz", q: "4. In the pathogenesis of acute pancreatitis, which inactive proenzyme is inappropriately activated within the pancreas?", t: 1, a: [1], o: ["Proinsulin.", "Trypsinogen.", "Pepsinogen.", "Proelastase."] },
+            { c: "Pancreatitis Semiology Quiz", q: "5. Which enzyme specifically triggers the activation of trypsinogen to trypsin during an acute episode?", t: 1, a: [1], o: ["Amylase.", "Cathepsin.", "Glucagon.", "Insulin."] },
+            { c: "Pancreatitis Semiology Quiz", q: "6. Which of the following is a symptom specifically associated with chronic pancreatitis?", t: 1, a: [1], o: ["Rapid pulse.", "Oily, smelly stools (steatorrhea).", "Sudden high fever.", "Tenderness to touch."] },
+            { c: "Pancreatitis Semiology Quiz", q: "7. According to the severity grading, 'Severe' acute pancreatitis is defined by organ failure lasting:", t: 1, a: [3], o: ["Less than 24 hours.", "Exactly 36 hours.", "Less than 48 hours.", "Longer than 48 hours."] },
+            { c: "Pancreatitis Semiology Quiz", q: "8. What are the most common causes of acute pancreatitis mentioned in the sources?", t: 1, a: [1], o: ["Smoking and high sugar intake.", "Gallstones, infections, and alcohol misuse.", "Dehydration and lack of exercise.", "High protein diets and caffeine."] },
+            { c: "Pancreatitis Semiology Quiz", q: "9. Which physical sign is described as hemorrhagic discoloration of the umbilicus?", t: 1, a: [1], o: ["Grey-Turner's sign.", "Cullen's sign.", "Murphy's sign.", "Rovsing's sign."] },
+            { c: "Pancreatitis Semiology Quiz", q: "10. Grey-Turner's sign is characterized by hemorrhagic discoloration of the:", t: 1, a: [2], o: ["Neck.", "Chest.", "Flanks.", "Thighs."] },
+            { c: "Pancreatitis Semiology Quiz", q: "11. When listening to the abdomen with a stethoscope during an acute episode, what is typically found?", t: 1, a: [2], o: ["Hyperactive intestinal sounds.", "Normal, rhythmic sounds.", "Very few or no intestinal sounds.", "A continuous humming sound."] },
+            { c: "Pancreatitis Semiology Quiz", q: "12. For a diagnosis of acute pancreatitis, serum lipase or amylase activity must be at least:", t: 1, a: [2], o: ["Equal to the normal limit.", "2x the upper limit of normal.", "3x the upper limit of normal.", "10x the upper limit of normal."] },
+            { c: "Pancreatitis Semiology Quiz", q: "13. How long does it typically take for amylase levels to return to normal?", t: 1, a: [1], o: ["24 hours.", "3–7 days.", "8–14 days.", "3 weeks."] },
+            { c: "Pancreatitis Semiology Quiz", q: "14. Which imaging test is used specifically to determine the exact location of a gallstone?", t: 1, a: [0], o: ["ERCP scan.", "Chest X-ray.", "Standard ultrasound.", "MRI."] },
+            { c: "Pancreatitis Semiology Quiz", q: "15. What is the primary benefit of a Contrast-Enhanced Computed Tomography (CECT) scan in pancreatitis?", t: 1, a: [1], o: ["Measuring blood sugar.", "Identifying inflammation, fluid collection, and changes in gland density.", "Detecting lung infections.", "Identifying bone density."] },
+            { c: "Pancreatitis Semiology Quiz", q: "16. In the 'MACHINES' mnemonic for treatment, what does the 'N' stand for?", t: 1, a: [1], o: ["Normal diet.", "Nil by mouth (NPO).", "Nasal oxygen.", "Neomycin administration."] },
+            { c: "Pancreatitis Semiology Quiz", q: "17. What is the purpose of a nasogastric tube in the treatment of mild acute pancreatitis?", t: 1, a: [1], o: ["To provide high-fat liquid nutrition.", "To remove excess liquids and air to treat nausea and vomiting.", "To deliver antibiotics directly to the stomach.", "To measure heart rate."] },
+            { c: "Pancreatitis Semiology Quiz", q: "18. Severe acute pancreatitis increases the risk of which life-threatening condition where the heart cannot pump enough blood?", t: 1, a: [1], o: ["Hypertension.", "Hypovolemic shock.", "Bradycardia.", "Pulmonary embolism."] },
+            { c: "Pancreatitis Semiology Quiz", q: "19. What dietary advice is typically given to patients when they start eating again after an episode?", t: 1, a: [1], o: ["High-protein, low-carb diet.", "Healthful, low-fat diet with small, regular meals.", "Fasting for 16 hours a day.", "High-caffeine intake to stimulate enzymes."] },
+            { c: "Pancreatitis Semiology Quiz", q: "20. Which complication carries a specific risk of rupture, hemorrhage, or infection?", t: 1, a: [2], o: ["Splenic vein thrombosis.", "Pleural effusion.", "Pseudocysts.", "Bile duct obstruction."] },
+
+            // Paralytic Ileus
+            { c: "Paralytic Ileus Quiz", q: "1. What is the primary cause of paralytic ileus?", t: 1, a: [1], o: ["A physical blockage by a tumor.", "Paralysis of the intestinal muscles.", "Excessive production of digestive enzymes.", "Bacterial overgrowth in the small intestine."] },
+            { c: "Paralytic Ileus Quiz", q: "2. Paralytic ileus is classified as which type of obstruction?", t: 1, a: [2], o: ["Mechanical.", "Dynamic.", "Non-mechanical (functional).", "Closed-loop."] },
+            { c: "Paralytic Ileus Quiz", q: "3. How long does postoperative paralytic ileus typically last?", t: 1, a: [1], o: ["12 hours.", "2 to 3 days (24–72 hours).", "Exactly 1 week.", "It is permanent without surgery."] },
+            { c: "Paralytic Ileus Quiz", q: "4. Which type of medication given preoperatively is associated with an increased risk of ileus?", t: 1, a: [1], o: ["Antibiotics.", "Anticholinergic drugs.", "Beta-blockers.", "Antivirals."] },
+            { c: "Paralytic Ileus Quiz", q: "5. Which postoperative medication class is a common cause of paralytic ileus?", t: 1, a: [0], o: ["Narcotics (Opioids).", "NSAIDs.", "Antifungals.", "Diuretics."] },
+            { c: "Paralytic Ileus Quiz", q: "6. Which electrolyte imbalance is a major risk factor for developing paralytic ileus?", t: 1, a: [1], o: ["Hyperkalemia.", "Hypokalemia (low potassium levels).", "Hyponatremia.", "Hypomagnesemia."] },
+            { c: "Paralytic Ileus Quiz", q: "7. What is heard on auscultation of the abdomen in a patient with paralytic ileus?", t: 1, a: [2], o: ["Hyperactive bowel sounds.", "High-pitched tinkling sounds.", "Few or no bowel sounds (quiet abdomen).", "Continuous arterial bruits."] },
+            { c: "Paralytic Ileus Quiz", q: "8. According to the sources, injury above which thoracic vertebrae results in hypomotility problems in the bowel?", t: 1, a: [1], o: ["T1.", "T5.", "T10.", "L2."] },
+            { c: "Paralytic Ileus Quiz", q: "9. Which metabolic condition is listed as a risk factor for paralytic ileus?", t: 1, a: [0], o: ["Diabetic ketoacidosis (DKA).", "Iron deficiency anemia.", "Hyperthyroidism.", "Gout."] },
+            { c: "Paralytic Ileus Quiz", q: "10. A 'stool-like' appearance of which symptom is especially concerning in ileus?", t: 1, a: [1], o: ["Urine.", "Vomiting.", "Perspiration.", "Saliva."] },
+            { c: "Paralytic Ileus Quiz", q: "11. Which of the following describes the pain profile in most cases of paralytic ileus?", t: 1, a: [1], o: ["It is the most prominent feature.", "It is often not a prominent feature.", "It always radiates to the left arm.", "It is sharp and localized to the appendix."] },
+            { c: "Paralytic Ileus Quiz", q: "12. On an X-ray, where is gas typically found in a patient with paralytic ileus?", t: 1, a: [1], o: ["Only in the stomach.", "Diffusely through the intestine, including the colon.", "Only in the rectum.", "There is no gas visible on the X-ray."] },
+            { c: "Paralytic Ileus Quiz", q: "13. What is a key difference between paralytic ileus and mechanical obstruction on a contrast study?", t: 1, a: [1], o: ["Mechanical has no air.", "Paralytic ileus has no obvious transition point.", "Paralytic ileus always shows a 'bird-beak' sign.", "Mechanical has fewer air/fluid levels."] },
+            { c: "Paralytic Ileus Quiz", q: "14. In cases of prolonged ileus, which 'peritoneal sign' may develop?", t: 1, a: [0], o: ["Rigidity and rebound tenderness.", "Decreased abdominal girth.", "Increased appetite.", "Normal peristalsis."] },
+            { c: "Paralytic Ileus Quiz", q: "15. What is the common term for paralytic ileus according to the classification of causes?", t: 1, a: [1], o: ["Dynamic ileus.", "Adynamic ileus.", "Acute diverticulitis.", "Hyper-motile ileus."] },
+            { c: "Paralytic Ileus Quiz", q: "16. Which specific pharmacological agent used in chemotherapy is mentioned as a cause?", t: 1, a: [1], o: ["Aspirin.", "Vincristine.", "Insulin.", "Penicillin."] },
+            { c: "Paralytic Ileus Quiz", q: "17. What is the primary purpose of a nasogastric (NG) tube in treating paralytic ileus?", t: 1, a: [1], o: ["To provide high-fiber nutrition.", "To decompress the stomach and release air.", "To deliver anticholinergic medications.", "To measure core body temperature."] },
+            { c: "Paralytic Ileus Quiz", q: "18. What is the standard treatment approach for simple adynamic ileus?", t: 1, a: [1], o: ["Immediate emergency surgery.", "Expectant waiting for resolution.", "High-impact abdominal exercise.", "Increased oral food intake."] },
+            { c: "Paralytic Ileus Quiz", q: "19. What is a common physical finding upon inspection of the abdomen?", t: 1, a: [1], o: ["Concave contour.", "Abdominal distension (swelling).", "Visible peristalsis.", "Large surgical scars in every case."] },
+            { c: "Paralytic Ileus Quiz", q: "20. Rapid treatment of ileus is necessary to prevent which serious complications?", t: 1, a: [1], o: ["Hearing loss.", "Perforation and infection.", "Bone fractures.", "Myocardial infarction."] },
+
+            // Peritonitis
+            { c: "Peritonitis Quiz", q: "1. How is peritonitis defined in the source material?", t: 1, a: [1], o: ["Inflammation of the gastric mucosa.", "Inflammation of the peritoneum, often caused by bacterial infection.", "Obstruction of the large intestine.", "A benign growth in the abdominal cavity."] },
+            { c: "Peritonitis Quiz", q: "2. Which condition is usually present in patients who develop primary peritonitis?", t: 1, a: [1], o: ["A history of peptic ulcers.", "Underlying ascites (e.g., from cirrhosis).", "Recent external abdominal trauma.", "A ruptured appendix."] },
+            { c: "Peritonitis Quiz", q: "3. Primary peritonitis (SBP) is characterized by being what type of infection in ~90% of cases?", t: 1, a: [1], o: ["Polymicrobial.", "Monomicrobial.", "Fungal.", "Viral."] },
+            { c: "Peritonitis Quiz", q: "4. Which of the following is a common cause of secondary peritonitis?", t: 1, a: [2], o: ["Hematogenous spread.", "Spontaneous transmigration of bacteria.", "Hollow organ perforation (e.g., peptic ulcer or diverticulum).", "Routine physical exercise."] },
+            { c: "Peritonitis Quiz", q: "5. Secondary peritonitis is typically characterized by what type of bacterial infection?", t: 1, a: [2], o: ["Purely anaerobic.", "Purely aerobic.", "Mixed infection of aerobic and anaerobic bacteria.", "Non-bacterial chemical irritation only."] },
+            { c: "Peritonitis Quiz", q: "6. What can cause 'chemical peritonitis', which is initially nonbacterial?", t: 1, a: [1], o: ["High-protein diet.", "Irritants such as blood, bile, urine, or barium.", "Excessive water intake.", "Vitamin K deficiency."] },
+            { c: "Peritonitis Quiz", q: "7. During a physical examination, how does a patient with peritonitis typically position themselves?", t: 1, a: [1], o: ["Fidgeting and shifting to find comfort.", "Lying very still, often with knees and hips flexed.", "Walking around to relieve pain.", "Lying prone (on their stomach)."] },
+            { c: "Peritonitis Quiz", q: "8. What does 'involuntary guarding' during a physical exam suggest?", t: 1, a: [1], o: ["Patient anxiety about the examination.", "Peritoneal irritation (reflex spasm of abdominal muscles).", "Healthy muscle tone.", "Voluntary contraction in anticipation of pain."] },
+            { c: "Peritonitis Quiz", q: "9. How is 'rebound tenderness' defined in the sources?", t: 1, a: [1], o: ["Pain felt when pressure is first applied.", "Pain with removal of pressure during palpation.", "Pain that radiates to the legs.", "Lack of pain during palpation."] },
+            { c: "Peritonitis Quiz", q: "10. What is typically found when listening to bowel sounds (auscultation) in a peritonitis patient?", t: 1, a: [1], o: ["Hyperactive, loud gurgling.", "Sparse or absent peristaltic sounds.", "Normal, rhythmic sounds.", "High-pitched tinkling sounds."] },
+            { c: "Peritonitis Quiz", q: "11. Why is peritonitis considered a surgical emergency?", t: 1, a: [1], o: ["It causes immediate hearing loss.", "It may cause sepsis with shock and organ failure.", "It leads to permanent muscle rigidity.", "it results in bone fractures."] },
+            { c: "Peritonitis Quiz", q: "12. In the analysis of peritoneal fluid, what neutrophil count confirms primary peritonitis (SBP)?", t: 1, a: [1], o: ["< 100 cells/μL.", "> 250 cells/μL.", "Exactly 500 cells/μL.", "> 1000 cells/μL."] },
+            { c: "Peritonitis Quiz", q: "13. A Serum-Ascites Albumin Gradient (SAAG) of what value supports a diagnosis of SBP?", t: 1, a: [1], o: ["< 0.5.", "> 1.1.", "Exactly 1.0.", "Negative value."] },
+            { c: "Peritonitis Quiz", q: "14. What might an abdominal X-ray detect in a case of organ perforation?", t: 1, a: [1], o: ["Increased bone density.", "Free air in the abdominal cavity.", "Excessive fluid in the lungs.", "Normal gas patterns in the colon."] },
+            { c: "Peritonitis Quiz", q: "15. Which imaging modality is the 'test of choice' for a suspected visceral abscess?", t: 1, a: [2], o: ["Plain X-ray.", "Ultrasound.", "CT scan.", "MRI."] },
+            { c: "Peritonitis Quiz", q: "16. What is the first-line antibiotic treatment class for primary peritonitis?", t: 1, a: [1], o: ["Oral Aspirin.", "3rd generation cephalosporins (e.g., cefotaxime).", "Simple topical antiseptics.", "High-dose Vitamin D."] },
+            { c: "Peritonitis Quiz", q: "17. What is a 'cornerstone' principle of the surgical treatment for peritonitis?", t: 1, a: [1], o: ["Removing the entire large intestine.", "Early and definitive source control.", "Avoiding all antibiotics.", "Waiting for all diagnostic tests before exploration."] },
+            { c: "Peritonitis Quiz", q: "18. Which class of antibiotics is specifically mentioned for use in severe peritonitis?", t: 1, a: [1], o: ["Penicillins.", "Carbapenems (e.g., imipenem or meropenem).", "Tetracyclines.", "Antivirals."] },
+            { c: "Peritonitis Quiz", q: "19. In secondary peritonitis, what is a characteristic finding of the peritoneal fluid glucose level?", t: 1, a: [0], o: ["Glucose < 50 mg/dL.", "Glucose > 200 mg/dL.", "Glucose is always absent.", "Glucose levels are higher than in the serum."] },
+            { c: "Peritonitis Quiz", q: "20. Which of the following is listed as a potential complication of peritonitis?", t: 1, a: [0], o: ["Paralytic (adynamic) ileus.", "Increased appetite.", "Improved immune response.", "Enhanced bowel motility."] },
+
+            // Stomach Ulcers Semiology
+            { c: "Stomach Ulcers Semiology Quiz", q: "1. What is the most common symptom of both gastric and duodenal ulcers?", t: 1, a: [1], o: ["Bloating", "Epigastric pain", "Weight loss", "Vomiting"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "2. How long after a meal does pain classically occur in a patient with a duodenal ulcer?", t: 1, a: [1], o: ["Shortly after meals", "2–3 hours afterward", "5–6 hours afterward", "Only during the meal"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "3. Which diagnostic test is preferred for evaluating a patient with suspected peptic ulcer disease?", t: 1, a: [1], o: ["Abdominal X-ray", "Upper GI endoscopy", "Blood group antigen test", "Stool culture"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "4. What are the three types of peptic ulcers categorized by location?", t: 1, a: [2], o: ["Gastric, Intestinal, and Colonic", "Hepatic, Pancreatic, and Gastric", "Esophageal, Gastric, and Duodenal", "Acute, Subacute, and Chronic"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "5. Peptic ulcers are defined as defects in the mucosa that extend through which layer?", t: 1, a: [2], o: ["Epithelium only", "Gel layer", "Muscularis", "Serosa"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "6. Which of the following is considered an 'aggressive factor' that can disrupt the physiologic balance of the stomach?", t: 1, a: [2], o: ["Mucus", "Bicarbonate", "NSAIDs", "Prostaglandins"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "7. What is the primary protective role of Prostaglandins of the E type (PGE) in the stomach?", t: 1, a: [1], o: ["Neutralizing acid directly", "Increasing production of bicarbonate and the mucous layer", "Stimulating gastrin release", "Removing excess hydrogen ions"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "8. When does the pain of a peptic ulcer most often occur?", t: 1, a: [0], o: ["When the stomach is empty", "Immediately after drinking water", "Only when sleeping", "During high-intensity exercise"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "9. Which bacteria is a major cause of the inflammation leading to peptic ulcers?", t: 1, a: [1], o: ["E. coli", "Helicobacter pylori", "Salmonella", "Staphylococcus"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "10. Zollinger-Ellison Syndrome (ZES) causes ulcers due to the excessive release of which hormone?", t: 1, a: [2], o: ["Histamine", "Insulin", "Gastrin", "Pepsin"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "11. How do NSAIDs increase the chance of developing a peptic ulcer?", t: 1, a: [1], o: ["By increasing the amount of acid-producing bacteria", "By blocking enzymes that produce chemicals protecting the stomach lining", "By directly burning the esophagus", "By reducing blood flow to the heart"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "12. Which physical characteristic of H. pylori allows it to play a role in pathogenesis?", t: 1, a: [1], o: ["Gram-positive staining", "Production of urease, catalase, and oxidase", "Spherical shape", "Resistance to all antibiotics"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "13. Which blood group is identified as having a higher predisposition to peptic ulceration?", t: 1, a: [3], o: ["Blood group A", "Blood group B", "Blood group AB", "Blood group O"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "14. What is a distinguishing feature of a 'chronic' ulcer compared to an 'acute' ulcer?", t: 1, a: [2], o: ["It resolves quickly when the cause is removed", "It involves only superficial erosion", "It involves the formation of fibrous tissue", "It is four times less common than acute ulcers"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "15. Which H. pylori test is described as non-invasive, painless, and takes only 15 minutes?", t: 1, a: [0], o: ["Urea Breath Test", "Serology (Blood antibody test)", "Stool antigen test", "Endoscopy"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "16. How do H2 blockers work to treat ulcers?", t: 1, a: [1], o: ["By coating the ulcer surface", "By blocking the action of histamine on gastric cells to reduce acid", "By killing H. pylori bacteria directly", "By neutralizing existing acid"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "17. In which specific type of ulcer are Proton-Pump Inhibitors (PPIs) superior to H2 blockers?", t: 1, a: [2], o: ["Gastric ulcers", "Duodenal ulcers", "Esophageal ulcers", "Chronic ulcers"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "18. Why is Misoprostol (Cytotec) contraindicated in pregnant women?", t: 1, a: [2], o: ["It causes severe constipation", "It interferes with nutrient absorption", "It can cause miscarriages", "It increases blood alcohol levels"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "19. What is the primary goal of ulcer treatment?", t: 1, a: [1], o: ["To increase stomach acid production", "To relieve pain, heal the ulcer, and prevent complications", "To identify the patient's blood group", "To promote weight loss"] },
+            { c: "Stomach Ulcers Semiology Quiz", q: "20. Which of the following is listed as a major complication of peptic ulcers?", t: 1, a: [0], o: ["Perforation", "Hypertension", "Diabetes", "Hearing loss"] }
+        ];
+
+        // Audio Context for feedback
+        let audioCtx = null;
+        function playTone(freq, type, duration) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        const playCorrect = () => playTone(880, 'sine', 0.2);
+        const playWrong = () => playTone(220, 'square', 0.2);
+
+        let totalQuestions = 0;
+
+        function initMCQs() {
+            const container = document.getElementById('quiz-container');
+            let currentChapter = "";
+
+            mcqs.forEach((m, idx) => {
+                // Insert Chapter Header
+                if (m.c !== currentChapter) {
+                    currentChapter = m.c;
+                    const chapterHeader = document.createElement('div');
+                    chapterHeader.className = "chapter-header text-white px-6 py-4 rounded-xl shadow-md mt-10 mb-6";
+                    chapterHeader.innerHTML = `<h2 class="text-2xl font-bold">${currentChapter}</h2>`;
+                    container.appendChild(chapterHeader);
+                }
+
+                // Handle Discussion Questions differently
+                if (m.discussion) {
+                    const discDiv = document.createElement('div');
+                    discDiv.className = "bg-amber-50 border-l-4 border-amber-500 p-5 rounded-r-lg shadow-sm mt-8";
+                    discDiv.innerHTML = `<h3 class="text-lg font-bold text-amber-800 mb-1">✍️ ${m.discussion}</h3><p class="text-sm text-amber-600">សូមត្រៀមចម្លើយសម្រាប់ពិភាក្សានៅក្នុងថ្នាក់។</p>`;
+                    container.appendChild(discDiv);
+                    return; // Skip standard MCQ rendering
+                }
+
+                totalQuestions++;
+                
+                const qDiv = document.createElement('div');
+                qDiv.className = 'mcq-wrapper p-6 border rounded-xl bg-white shadow-sm transition-all duration-300';
+                qDiv.id = `wrapper-q${idx}`;
+                
+                // Input Type (Radio for 1 answer, Checkbox for multiple)
+                const isMulti = m.t > 1;
+                const inputType = isMulti ? 'checkbox' : 'radio';
+                const helperText = isMulti ? `<span class="text-sm text-blue-600 font-bold bg-blue-100 px-3 py-1 rounded-full ml-2">(ជ្រើសរើស ${m.t})</span>` : '';
+
+                qDiv.innerHTML = `
+                    <p class="font-bold text-lg text-gray-800 mb-4 leading-relaxed">${m.q} ${helperText}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 options-grid" id="grid-q${idx}">
+                        ${m.o.map((opt, oIdx) => `
+                            <label class="flex items-start p-4 border rounded-xl hover:bg-slate-50 cursor-pointer transition relative group overflow-hidden bg-white shadow-sm">
+                                <input type="${inputType}" name="q${idx}" value="${oIdx}" class="mt-1 mr-3 w-5 h-5 text-blue-600 hidden" onchange="checkAnswer(${idx})">
+                                <div class="w-5 h-5 mt-0.5 mr-3 border-2 border-gray-300 rounded${isMulti ? '' : '-full'} check-indicator flex-shrink-0"></div>
+                                <span class="text-gray-700 leading-snug">${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(qDiv);
+            });
+            
+            document.getElementById('total-qs').textContent = totalQuestions;
+        }
+
+        // Logic to check answer instantly when selected
+        function checkAnswer(qIdx) {
+            const m = mcqs[qIdx];
+            const grid = document.getElementById(`grid-q${qIdx}`);
+            const wrapper = document.getElementById(`wrapper-q${qIdx}`);
+            const labels = grid.querySelectorAll('label');
+            const checkedBoxes = grid.querySelectorAll(`input[name="q${qIdx}"]:checked`);
+            
+            // Wait until user selects the required number of options
+            if (checkedBoxes.length === m.t) {
+                grid.classList.add('disabled-labels');
+                let isPerfect = true;
+                
+                // Evaluate selected boxes
+                checkedBoxes.forEach(cb => {
+                    const val = parseInt(cb.value);
+                    if (m.a.includes(val)) {
+                        labels[val].classList.add('option-correct');
+                    } else {
+                        labels[val].classList.add('option-incorrect');
+                        isPerfect = false;
+                    }
+                });
+                
+                // Reveal the correct answers that were missed
+                m.a.forEach(correctVal => {
+                    labels[correctVal].classList.add('option-correct');
+                });
+
+                if (isPerfect) {
+                    playCorrect();
+                    wrapper.classList.add('border-green-300', 'bg-green-50/30');
+                } else {
+                    playWrong();
+                    wrapper.classList.add('border-red-300', 'bg-red-50/30');
+                }
+            } else if (checkedBoxes.length > m.t) {
+                // Prevent checking more than required by unchecking the last clicked
+                event.target.checked = false;
+            }
+        }
+
+        function gradeQuiz() {
+            let totalScore = 0;
+            
+            mcqs.forEach((m, idx) => {
+                if(m.discussion) return;
+                
+                const checkedBoxes = document.querySelectorAll(`input[name="q${idx}"]:checked`);
+                let isPerfect = false;
+
+                if (checkedBoxes.length === m.t) {
+                    isPerfect = true;
+                    checkedBoxes.forEach(cb => {
+                        if (!m.a.includes(parseInt(cb.value))) {
+                            isPerfect = false;
+                        }
+                    });
+                }
+                
+                if (isPerfect) totalScore++;
+                
+                // Auto-evaluate any unanswered questions
+                if (checkedBoxes.length < m.t && checkedBoxes.length > 0) {
+                     // Force trigger check on incomplete answers
+                     checkAnswer(idx); 
+                }
+            });
+
+            document.getElementById('score').textContent = totalScore;
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('submit-btn-container').style.display = 'none';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        window.onload = initMCQs;
+    </script>
+</body>
+</html>
